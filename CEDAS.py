@@ -1,0 +1,88 @@
+#%%
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Dec  5 14:33:07 2018
+
+@author: HydeR
+Copyright R Hyde 2019
+Released under the GNU GPLver3.0
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/
+If you use this file please acknowledge the author and cite as a
+reference:
+Hyde R, Angelov P, MacKenzie AR (2017) Fully online clustering of evolving
+data streams into arbitrarily shaped clusters. Inf Sci (Ny) 382–383:96–114 
+doi: 10.1016/j.ins.2016.12.004
+
+"""
+
+# Function initialization
+import numpy as np
+import scipy.spatial as spatial
+import matplotlib.pyplot as plt
+from math import pi
+
+#%%
+def CEDAS(sample, radius, cluster_centre, cluster_life,\
+        cluster_count, cluster_kernel, decay, min_thresh, outliers, graph):
+#    print (cluster_centre.shape)
+    
+    if cluster_centre.shape[0] == 0: # if no microC exist, create first
+        print("No Clusters")
+        outliers = np.vstack((outliers,sample))
+        [cluster_centre, cluster_life, cluster_count, cluster_kernel, outliers, graph] = StartCluster(cluster_centre, cluster_life, cluster_count, cluster_kernel, outliers, radius, min_thresh, graph)
+
+    else:
+        print ('Clustering started')
+        cluster_centre, cluster_life, cluster_count, cluster_kernel, outliers, graph\
+             = Assign(cluster_centre, cluster_life, cluster_count, cluster_kernel, outliers, sample, radius, min_thresh, graph)
+
+
+    return[cluster_centre, cluster_life, cluster_count, cluster_kernel, outliers, graph]
+#%%
+def StartCluster(cluster_centre, cluster_life, cluster_count, cluster_kernel, outliers, radius, min_thresh, graph):
+    distances = np.asarray( spatial.distance.cdist(outliers, outliers, 'euclidean') )
+    # print(distances)
+    # inside = (distances < radius).sum()
+    inside = np.less(distances, radius)
+    print(inside)
+    num_close = inside.sum(axis=1)
+    print(num_close)
+    number_in = np.amax( num_close , 0) # maximum number of data within radius of another
+    location = np.where(num_close == number_in) # list of locations of data within radius
+    location_1st = location[0][0] # array location of 1st datum with number_in neighbours, i.e. 1st microC centre candidate
+   
+    if number_in > min_thresh: # if enough data to be a valid microC
+        N = 1 # this is the first microC
+        # calculate mean to use as microC centre point
+        cluster_centre = np.atleast_2d(np.mean(outliers[location], axis=0))
+        cluster_life = 1
+        cluster_count = number_in
+        # find data within radius of location_1st
+        distances = np.asarray( spatial.distance.cdist(np.asarray(cluster_centre), outliers, 'euclidean') )
+        inside = np.less(distances, radius)
+        print(inside)
+        num_close = inside.sum(axis=1)
+        print(num_close)
+        inside_kernel = np.less(distances, radius/2)
+        print(inside_kernel)
+        kernel = inside.sum(axis=1)
+        print(kernel)
+        graph.add_node(1) # add node to graph
+        # remove assigned data from outlier list
+        outliers = np.delete(outliers, inside, 0)
+
+
+    return [cluster_centre, cluster_life, cluster_count, cluster_kernel, outliers, graph]
+#%%
+def Assign(cluster_centre, cluster_life, cluster_count, cluster_kernel, outliers, sample, radius, min_thresh, graph):
+    distances = np.asarray( spatial.distance.cdist(sample, cluster_centre, 'euclidean') )
+    min_distance = np.amin(distances)
+    assigned_cluster = np.where(min_distance == distances)[1][0] # reverse variable order?
+    if min_distance < radius:
+        print(assigned_cluster)
+        print('Data assigned to mC ', assigned_cluster)
+
+
+
+    return (cluster_centre, cluster_life, cluster_count, cluster_kernel, outliers, graph)
