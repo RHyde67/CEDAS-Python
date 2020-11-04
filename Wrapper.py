@@ -7,7 +7,7 @@ Basic wrapper to load data and run my Implementation of CEDAS
 
 # Initialise
 import numpy as np
-import pandas as pd
+# import pandas as pd
 import CEDAS as CEDAS
 import matplotlib.pyplot as plt
 # from timeit import default_timer as timer
@@ -45,13 +45,16 @@ radius = 0.05
 decay = 500 # number of samples expected in time relevant period
 decay = (1/decay)
 min_thresh = (1,)
-# Initialise Graph
-outliers = cluster_centre = np.array([]).reshape(0,2)
-# cluster_centre = np.array_like(outliers)
-cluster_life = []
-cluster_count = cluster_kernel = []
-graph = nx.Graph()
+# Initialise cluster_graph
+outliers = cluster_centre = np.array([]).reshape(0,2) # array of microC centre points
+cluster_life = [] # value of microC life
+cluster_count = cluster_kernel = [] # number of data in microC kernel
+cluster_node = [] # list of graph nodes correspoding to microC
+cluster_graph = nx.Graph()
 idx1 = -1
+cluster_parameters = [cluster_centre, cluster_life, cluster_count, cluster_kernel, outliers, radius, decay,\
+     min_thresh, cluster_graph]
+
 while idx1 < data.shape[1]-1:
     idx1 += 1
     # if idx1 == data.shape[1]-1: # restart loop if required
@@ -62,11 +65,11 @@ while idx1 < data.shape[1]-1:
     sample = np.atleast_2d(data[:, idx1])
     # print(sample)
     # Run CEDAS Algorithm
-    [cluster_centre, cluster_life, cluster_count, cluster_kernel, outliers, graph]\
-         = CEDAS.CEDAS(sample, radius, cluster_centre, cluster_life,\
-        cluster_count, cluster_kernel, decay, min_thresh, outliers, graph)
+    [ outliers, cluster_centre, cluster_life, cluster_count, cluster_kernel,cluster_graph]\
+         = CEDAS.CEDAS(sample, radius, decay, min_thresh, cluster_node, cluster_centre, cluster_life,\
+        cluster_count, cluster_kernel, outliers, cluster_graph)
 
-    # Display Graph
+    # Display cluster_graph
 
     # Display Clusters
     print(idx1)
